@@ -458,14 +458,22 @@
     const p = typeof petIndex === "number" ? petIndex : activePet();
     const catalog = window.dressUpCatalog[p] || window.dressUpCatalog[0] || {};
     let drew = false;
-    catKeys(p).slice().sort((a, b) => (catalog[a].z || 0) - (catalog[b].z || 0)).forEach(k => {
+    const windActive = window.ClothWind && window.ClothWind.get(p) > 0.02;
+    // While the blower's wind is on, a blown skirt or dress jumps above the
+    // other layers (z 200) so the blown-up art isn't hidden by the top/hat.
+    const layerZ = (k) => {
+      const id = (window.selectedClothes[p] && window.selectedClothes[p][k]) ?? 0;
+      if (windActive && id !== 0 && id !== "0" && isSkirtLike(k, id)) return 200;
+      return catalog[k].z || 0;
+    };
+    catKeys(p).slice().sort((a, b) => layerZ(a) - layerZ(b)).forEach(k => {
       const id = (window.selectedClothes[p] && window.selectedClothes[p][k]) ?? 0;
       if (id === 0 || id === "0") return;
       const it = catalog[k] && catalog[k].items && catalog[k].items[id];
       if (!it || !it.img || it.img._failed) return;
       const hex = COLORS[(window.clothingColors[p] && window.clothingColors[p][k]) || DEFAULT_COLOR] || null;
       let baseImg = it.img;
-      if (window.ClothWind && window.ClothWind.get(p) > 0.02 && isSkirtLike(k, id)) {
+      if (windActive && isSkirtLike(k, id)) {
         const wImg = windVariant(it.img);
         if (wImg && !wImg._failed && wImg.complete && wImg.naturalWidth) baseImg = wImg;
       }
